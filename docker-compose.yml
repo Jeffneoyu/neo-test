@@ -1,0 +1,59 @@
+version: '3'
+
+services:
+  app:
+    # 从当前目录的 Dockerfile 构建镜像
+    build:
+      context: .
+      dockerfile: Dockerfile
+    
+    # 主机端口80映射到容器端口8000，供外部访问应用
+    ports:
+      - "80:8000"
+    
+    # 挂载持久化卷，避免数据丢失
+    volumes:
+      - my-docker-test-data:/etc/test
+    
+    # 容器异常退出时自动重启，提升稳定性
+    restart: unless-stopped
+
+    # 环境变量传递给应用，用于数据库连接等配置
+    environment:
+      - MYSQL_HOST=neodb          # 连接MySQL服务的容器名
+      - MYSQL_PORT=3306        # MySQL端口
+      - MYSQL_USER=root        # 数据库用户名
+      - MYSQL_PASSWORD=123  # 数据库密码（生产环境建议用secret管理）
+      - MYSQL_DATABASE=my-docker-test-neodb    # 默认数据库名
+    
+    # 确保数据库容器先启动，避免应用启动时连接失败
+    depends_on:
+      - db
+
+  db:
+    # 采用官方MySQL 8.0镜像
+    image: mysql:8.0
+    
+    # 数据库容器异常退出自动重启
+    restart: unless-stopped
+    
+    # 初始化数据库环境变量
+    environment:
+      MYSQL_ROOT_PASSWORD: 123  # root密码
+      MYSQL_DATABASE: my-docker-test-neodbdb          # 初始化创建数据库
+      MYSQL_USER: root                    # 用户名
+      MYSQL_PASSWORD: 123        # 密码
+
+    # 数据持久化，防止数据库数据丢失
+    volumes:
+      - mysql-data:/var/lib/mysql
+    
+    # 主机映射3306端口，方便本机或其他服务访问（生产环境可视情况关闭映射）
+    ports:
+      - "3306:3306"
+
+# 定义命名卷，用于持久化存储
+volumes:
+  my-docker-test-data:
+  my-docker-neo-data:
+  mysql-data:
